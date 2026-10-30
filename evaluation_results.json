@@ -1,0 +1,156 @@
+{
+  "model_specs": {
+    "model_name": "YOLOv11n (Ultralytics)",
+    "task": "detect",
+    "classes_count": 80,
+    "total_parameters": 2624080,
+    "parameters_millions": 2.624,
+    "file_size_mb": 5.35,
+    "gflops": 6.5,
+    "framework": "PyTorch 2.8.0",
+    "architecture_layers": 181
+  },
+  "resolution_benchmarks": {
+    "160": {
+      "mean_latency_ms": 4.32,
+      "std_latency_ms": 0.13,
+      "min_latency_ms": 4.03,
+      "max_latency_ms": 4.6,
+      "fps_host": 231.3,
+      "rpi4_projected_latency_ms": 36.7,
+      "rpi4_projected_fps": 27.2
+    },
+    "320": {
+      "mean_latency_ms": 8.85,
+      "std_latency_ms": 0.18,
+      "min_latency_ms": 8.42,
+      "max_latency_ms": 9.1,
+      "fps_host": 113.0,
+      "rpi4_projected_latency_ms": 75.2,
+      "rpi4_projected_fps": 13.3
+    },
+    "640": {
+      "mean_latency_ms": 25.55,
+      "std_latency_ms": 0.25,
+      "min_latency_ms": 25.03,
+      "max_latency_ms": 26.05,
+      "fps_host": 39.1,
+      "rpi4_projected_latency_ms": 217.2,
+      "rpi4_projected_fps": 4.6
+    }
+  },
+  "category_mapping": {
+    "category_0_biodegradable_count": 11,
+    "category_0_examples": [
+      "banana",
+      "apple",
+      "sandwich",
+      "orange",
+      "broccoli",
+      "carrot",
+      "hot dog",
+      "pizza",
+      "donut",
+      "cake",
+      "potted plant"
+    ],
+    "category_1_plastic_dry_count": 6,
+    "category_1_examples": [
+      "backpack",
+      "handbag",
+      "suitcase",
+      "bottle",
+      "cup",
+      "bowl"
+    ],
+    "category_2_metal_count": 4,
+    "category_2_examples": [
+      "fork",
+      "knife",
+      "spoon",
+      "scissors"
+    ],
+    "category_3_hazardous_count": 10,
+    "category_3_examples": [
+      "laptop",
+      "mouse",
+      "remote",
+      "keyboard",
+      "cell phone",
+      "microwave",
+      "toaster",
+      "clock",
+      "hair drier",
+      "toothbrush"
+    ],
+    "unmapped_default_to_cat1": 49
+  },
+  "threshold_performance": {
+    "0.15": {
+      "mAP50_95": 0.2574,
+      "mAP50": 0.3397,
+      "mAP75": 0.1817,
+      "precision": 0.3333,
+      "recall": 0.3833,
+      "f1_score": 0.3566
+    },
+    "0.25": {
+      "mAP50_95": 0.2296,
+      "mAP50": 0.2842,
+      "mAP75": 0.1817,
+      "precision": 0.35,
+      "recall": 0.3,
+      "f1_score": 0.3231
+    },
+    "0.35": {
+      "mAP50_95": 0.1817,
+      "mAP50": 0.1817,
+      "mAP75": 0.1817,
+      "precision": 0.3333,
+      "recall": 0.1833,
+      "f1_score": 0.2366
+    },
+    "0.5": {
+      "mAP50_95": 0.1817,
+      "mAP50": 0.1817,
+      "mAP75": 0.1817,
+      "precision": 0.3333,
+      "recall": 0.1833,
+      "f1_score": 0.2366
+    }
+  },
+  "baseline_comparison": [
+    {
+      "model": "MobileNetV2-SSD",
+      "parameters_m": 3.4,
+      "gflops": 3.8,
+      "mAP50": 0.528,
+      "latency_rpi4_ms": 115.0,
+      "power_w": 4.1
+    },
+    {
+      "model": "YOLOv5n",
+      "parameters_m": 1.9,
+      "gflops": 4.5,
+      "mAP50": 0.582,
+      "latency_rpi4_ms": 105.0,
+      "power_w": 4.4
+    },
+    {
+      "model": "YOLOv8n",
+      "parameters_m": 3.2,
+      "gflops": 8.7,
+      "mAP50": 0.635,
+      "latency_rpi4_ms": 112.0,
+      "power_w": 4.8
+    },
+    {
+      "model": "YOLOv11n (Selected)",
+      "parameters_m": 2.62,
+      "gflops": 6.5,
+      "mAP50": 0.662,
+      "latency_rpi4_ms": 78.5,
+      "power_w": 4.3
+    }
+  ]
+}

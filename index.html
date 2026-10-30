@@ -3,218 +3,570 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Waste Sorter Sim</title>
+<title>AI Waste Management System</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0a0e17;--card:#111827;--card-border:#1e293b;
-  --green:#22c55e;--yellow:#eab308;--blue:#3b82f6;--red:#ef4444;
-  --accent:#6366f1;--text:#e2e8f0;--muted:#64748b;
-  --glass:rgba(17,24,39,.75);
+  --bg:#0b0f19;
+  --surface:#131b2e;
+  --surface-border:#1f2b48;
+  --surface-hover:#1a253f;
+  --green:#22c55e;
+  --yellow:#eab308;
+  --blue:#3b82f6;
+  --red:#ef4444;
+  --accent:#6366f1;
+  --text:#f1f5f9;
+  --text-muted:#94a3b8;
+  --radius:12px;
 }
-body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}
-h2{font-size:1rem;font-weight:600;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between}
-h2 .title-left{display:flex;align-items:center;gap:.5rem}
-h2 .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
-
-header{text-align:center;padding:1.2rem 1rem .8rem;background:linear-gradient(180deg,#111827 0%,transparent 100%)}
-header h1{font-size:1.5rem;background:linear-gradient(135deg,var(--accent),var(--green));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:.5px}
-header p{color:var(--muted);font-size:.8rem;margin-top:4px}
-
-/* layout */
-.dashboard{display:grid;grid-template-columns:320px 1fr 300px;grid-template-rows:auto auto;gap:14px;padding:0 14px 14px;max-width:1440px;margin:0 auto}
-.card{background:var(--glass);backdrop-filter:blur(12px);border:1px solid var(--card-border);border-radius:14px;padding:16px;position:relative;overflow:hidden}
-.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(99,102,241,.4),transparent)}
-
-#binCard{grid-row:1/3}
-#binCanvas{width:100%;border-radius:10px;display:block;margin-top:8px}
-
-#detectCard{min-height:240px}
-.cam-feed{background:#000;border-radius:10px;height:200px;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-top:8px}
-.cam-feed .scanline{position:absolute;width:100%;height:2px;background:rgba(99,102,241,.35);animation:scan 2.5s linear infinite;pointer-events:none;z-index:2}
-@keyframes scan{0%{top:0}100%{top:100%}}
-.cam-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#05070c;display:none;z-index:1}
-.bbox{position:absolute;border:2px solid var(--green);border-radius:4px;transition:all .3s;z-index:3;pointer-events:none}
-.bbox-label{position:absolute;top:-20px;left:0;background:var(--green);color:#000;font-size:.65rem;padding:1px 6px;border-radius:3px;white-space:nowrap;font-weight:700}
-.waste-emoji{font-size:3rem;transition:transform .3s;z-index:1}
-
-#ctrlCard{display:flex;flex-direction:column;gap:10px}
-.btn{padding:10px 16px;border:none;border-radius:10px;cursor:pointer;font-weight:600;font-size:.85rem;transition:transform .15s,box-shadow .15s;color:#fff}
-.btn:active{transform:scale(.96)}
-.btn-primary{background:linear-gradient(135deg,var(--accent),#818cf8)}
-.btn-success{background:linear-gradient(135deg,#059669,var(--green))}
-.btn-danger{background:linear-gradient(135deg,#dc2626,var(--red))}
-select,input[type=range]{width:100%;padding:8px;border-radius:8px;border:1px solid var(--card-border);background:var(--bg);color:var(--text);font-size:.82rem}
-label{font-size:.78rem;color:var(--muted);display:block;margin-bottom:4px}
-.toggle-row{display:flex;align-items:center;justify-content:space-between}
-.switch{position:relative;width:44px;height:24px;display:inline-block}
-.switch input{opacity:0;width:0;height:0}
-.slider{position:absolute;inset:0;background:var(--card-border);border-radius:24px;cursor:pointer;transition:.3s}
-.slider::before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
-.switch input:checked+.slider{background:var(--accent)}
-.switch input:checked+.slider::before{transform:translateX(20px)}
-
-.fill-bars{display:flex;flex-direction:column;gap:10px;margin-top:8px}
-.fill-row{display:flex;align-items:center;gap:8px}
-.fill-row .lbl{width:90px;font-size:.75rem;font-weight:600}
-.fill-track{flex:1;height:18px;background:var(--bg);border-radius:9px;overflow:hidden;position:relative}
-.fill-bar{height:100%;border-radius:9px;transition:width .6s ease;position:relative}
-.fill-bar span{position:absolute;right:6px;top:1px;font-size:.65rem;font-weight:700;color:#000}
-.alert-badge{font-size:.7rem;padding:2px 6px;border-radius:6px;background:var(--red);color:#fff;animation:pulse 1s infinite alternate}
-@keyframes pulse{to{opacity:.5}}
-
-.pipeline{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
-.pipe-step{flex:1;min-width:60px;text-align:center;padding:8px 4px;border-radius:10px;background:var(--bg);font-size:.7rem;border:1px solid var(--card-border);transition:all .3s}
-.pipe-step.active{border-color:var(--accent);background:rgba(99,102,241,.15);box-shadow:0 0 12px rgba(99,102,241,.3)}
-.pipe-step .icon{font-size:1.2rem;display:block;margin-bottom:2px}
-
-.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
-.stat-box{background:var(--bg);padding:10px;border-radius:10px;text-align:center;border:1px solid var(--card-border)}
-.stat-box .val{font-size:1.4rem;font-weight:700}
-.stat-box .lbl{font-size:.65rem;color:var(--muted);margin-top:2px}
-
-#pieCanvas{width:100%;max-width:180px;margin:8px auto;display:block}
-
-.status-tag{font-size:.65rem;font-weight:600;padding:2px 7px;border-radius:10px;background:#1e293b;color:var(--muted);letter-spacing:.2px}
-.status-tag.online{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.3)}
-
-@media(max-width:1100px){
-  .dashboard{grid-template-columns:1fr 1fr;grid-template-rows:auto}
-  #binCard{grid-row:auto}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  line-height:1.5;
+  padding:20px 16px;
+  min-height:100vh;
 }
-@media(max-width:700px){
-  .dashboard{grid-template-columns:1fr}
+.container{
+  max-width:1200px;
+  margin:0 auto;
+  display:flex;
+  flex-direction:column;
+  gap:20px;
+}
+
+/* Header */
+header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:12px;
+  padding-bottom:12px;
+  border-bottom:1px solid var(--surface-border);
+}
+.header-titles h1{
+  font-size:1.4rem;
+  font-weight:700;
+  letter-spacing:-0.02em;
+  color:#fff;
+}
+.header-titles p{
+  font-size:0.85rem;
+  color:var(--text-muted);
+}
+.backend-status{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 12px;
+  border-radius:20px;
+  background:var(--surface);
+  border:1px solid var(--surface-border);
+  font-size:0.75rem;
+  font-weight:600;
+  cursor:pointer;
+  transition:all 0.2s ease;
+}
+.backend-status:hover{
+  background:var(--surface-hover);
+}
+.status-indicator{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#64748b;
+}
+.backend-status.online .status-indicator{
+  background:var(--green);
+  box-shadow:0 0 8px rgba(34,197,94,0.6);
+}
+
+/* 2-Column Layout */
+.main-grid{
+  display:grid;
+  grid-template-columns:520px 1fr;
+  gap:20px;
+}
+@media(max-width:960px){
+  .main-grid{grid-template-columns:1fr}
+}
+
+.panel{
+  background:var(--surface);
+  border:1px solid var(--surface-border);
+  border-radius:var(--radius);
+  padding:20px;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+.panel-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.panel-title{
+  font-size:0.95rem;
+  font-weight:600;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+/* Canvas Bin */
+#binCanvas{
+  width:100%;
+  max-width:480px;
+  height:auto;
+  aspect-ratio:1/1;
+  margin:0 auto;
+  display:block;
+  border-radius:var(--radius);
+  background:#090d16;
+}
+
+/* Hardware Telemetry Bar */
+.telemetry-row{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:10px;
+  background:#090d16;
+  border:1px solid var(--surface-border);
+  border-radius:10px;
+  padding:10px 14px;
+  font-size:0.8rem;
+  text-align:center;
+}
+.telemetry-item span{
+  display:block;
+  color:var(--text-muted);
+  font-size:0.7rem;
+  margin-bottom:2px;
+}
+.telemetry-item b{
+  font-size:0.95rem;
+  color:#fff;
+}
+
+/* Pipeline sequence */
+.pipeline-track{
+  display:grid;
+  grid-template-columns:repeat(5, 1fr);
+  gap:6px;
+}
+.pipe-node{
+  text-align:center;
+  padding:8px 4px;
+  border-radius:8px;
+  background:#090d16;
+  border:1px solid var(--surface-border);
+  font-size:0.75rem;
+  font-weight:600;
+  color:var(--text-muted);
+  transition:all 0.25s ease;
+}
+.pipe-node.active{
+  border-color:var(--accent);
+  background:rgba(99,102,241,0.18);
+  color:#fff;
+}
+
+/* Camera Feed */
+.camera-box{
+  background:#05070c;
+  border:1px solid var(--surface-border);
+  border-radius:10px;
+  height:180px;
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+.camera-img{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  display:none;
+}
+.waste-display{
+  font-size:3.5rem;
+  transition:transform 0.2s ease;
+}
+.bbox{
+  position:absolute;
+  border:2px solid var(--green);
+  border-radius:4px;
+  transition:all 0.2s ease;
+  pointer-events:none;
+}
+.bbox-tag{
+  position:absolute;
+  top:-20px;
+  left:0;
+  background:var(--green);
+  color:#000;
+  font-size:0.65rem;
+  font-weight:700;
+  padding:1px 6px;
+  border-radius:3px;
+  white-space:nowrap;
+}
+.camera-meta{
+  display:flex;
+  justify-content:space-between;
+  font-size:0.75rem;
+  color:var(--text-muted);
+  background:#090d16;
+  padding:8px 12px;
+  border-radius:8px;
+  border:1px solid var(--surface-border);
+}
+.camera-meta b{
+  color:var(--text);
+}
+
+/* Action Controls */
+.button-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding:11px 16px;
+  border:none;
+  border-radius:8px;
+  font-size:0.85rem;
+  font-weight:600;
+  cursor:pointer;
+  transition:all 0.15s ease;
+  color:#fff;
+}
+.btn:active{transform:scale(0.98)}
+.btn-primary{
+  background:linear-gradient(135deg, #4f46e5, #6366f1);
+}
+.btn-primary:hover{opacity:0.95}
+.btn-secondary{
+  background:#1e293b;
+  border:1px solid var(--surface-border);
+  color:var(--text);
+}
+.btn-secondary:hover{background:#27354f}
+
+.select-wrapper{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+select{
+  flex:1;
+  padding:9px 12px;
+  border-radius:8px;
+  border:1px solid var(--surface-border);
+  background:#090d16;
+  color:var(--text);
+  font-size:0.82rem;
+  outline:none;
+}
+.small-options{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:0.8rem;
+  color:var(--text-muted);
+  padding:0 2px;
+}
+.toggle-switch{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  cursor:pointer;
+}
+
+/* Sensor Fill Levels */
+.sensors-list{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.sensor-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:0.8rem;
+}
+.sensor-label{
+  width:95px;
+  font-weight:600;
+}
+.sensor-track{
+  flex:1;
+  height:16px;
+  background:#090d16;
+  border-radius:8px;
+  border:1px solid var(--surface-border);
+  overflow:hidden;
+  position:relative;
+}
+.sensor-bar{
+  height:100%;
+  border-radius:8px;
+  transition:width 0.4s ease;
+  position:relative;
+}
+.sensor-bar span{
+  position:absolute;
+  right:6px;
+  top:0;
+  font-size:0.65rem;
+  font-weight:700;
+  color:#000;
+  line-height:16px;
+}
+.sensor-alert{
+  width:42px;
+  font-size:0.65rem;
+  font-weight:700;
+  color:var(--red);
+  text-align:right;
+}
+
+/* Stats Pill Bar */
+.stats-bar{
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  gap:10px;
+}
+.stat-pill{
+  background:#090d16;
+  border:1px solid var(--surface-border);
+  border-radius:8px;
+  padding:10px;
+  text-align:center;
+}
+.stat-pill .num{
+  font-size:1.2rem;
+  font-weight:700;
+  color:#fff;
+}
+.stat-pill .label{
+  font-size:0.7rem;
+  color:var(--text-muted);
+}
+
+/* Compact Log */
+.compact-log{
+  background:#090d16;
+  border:1px solid var(--surface-border);
+  border-radius:8px;
+  padding:8px 12px;
+  height:80px;
+  overflow-y:auto;
+  font-family:monospace;
+  font-size:0.72rem;
+  color:var(--text-muted);
+  line-height:1.6;
 }
 </style>
 </head>
 <body>
-<header>
-  <h1>Waste Sorter Simulation (YOLOv11n + RPi4)</h1>
-  <p>Based on Siyad et al. (2026) - two-servo lid, 4 bins, ultrasonic fill sensing, Firebase alerts</p>
-</header>
 
-<div class="dashboard">
+<div class="container">
 
-  <!-- bin view on the left -->
-  <div class="card" id="binCard">
-    <h2>
-      <span class="title-left"><span class="dot" style="background:var(--accent)"></span>Bin (top-down)</span>
-    </h2>
-    <canvas id="binCanvas" width="580" height="580"></canvas>
-    <div class="pipeline" id="pipeline">
-      <div class="pipe-step" data-step="idle"><span class="icon">-</span>Idle</div>
-      <div class="pipe-step" data-step="detect"><span class="icon">1</span>Detect</div>
-      <div class="pipe-step" data-step="turn"><span class="icon">2</span>Turn 45&deg;</div>
-      <div class="pipe-step" data-step="tilt"><span class="icon">3</span>Tilt 70&deg;</div>
-      <div class="pipe-step" data-step="return"><span class="icon">4</span>Return</div>
+  <!-- Header -->
+  <header>
+    <div class="header-titles">
+      <h1>AI Waste Management System</h1>
+      <p>YOLOv11n Detection + Two-Servo Mechanical Sorter + Ultrasonic Fill Sensing</p>
     </div>
-    <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:.75rem;color:var(--muted)">
-      <span>Base servo: <b id="servoBase" style="color:var(--text)">0&deg;</b></span>
-      <span>Tilt servo: <b id="servoTilt" style="color:var(--text)">0&deg;</b></span>
-      <span>State: <b id="stateLabel" style="color:var(--accent)">IDLE</b></span>
+    <div class="backend-status" id="backendBadge" onclick="checkBackendStatus()" title="Click to refresh connection">
+      <div class="status-indicator"></div>
+      <span id="backendText">Checking Backend...</span>
+    </div>
+  </header>
+
+  <!-- Main 2-Column Workspace -->
+  <div class="main-grid">
+
+    <!-- LEFT: Mechanical Bin Visualizer -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Mechanical Sorting Bin (Top-Down)</div>
+      </div>
+
+      <canvas id="binCanvas" width="580" height="580"></canvas>
+
+      <!-- Hardware Telemetry -->
+      <div class="telemetry-row">
+        <div class="telemetry-item">
+          <span>BASE SERVO</span>
+          <b id="servoBase">0&deg;</b>
+        </div>
+        <div class="telemetry-item">
+          <span>TILT SERVO</span>
+          <b id="servoTilt">0&deg;</b>
+        </div>
+        <div class="telemetry-item">
+          <span>STATE</span>
+          <b id="stateLabel" style="color:var(--accent)">IDLE</b>
+        </div>
+      </div>
+
+      <!-- Pipeline Sequence -->
+      <div class="pipeline-track" id="pipeline">
+        <div class="pipe-node" data-step="idle">1. Idle</div>
+        <div class="pipe-node" data-step="detect">2. Detect</div>
+        <div class="pipe-node" data-step="turn">3. Turn</div>
+        <div class="pipe-node" data-step="tilt">4. Tilt</div>
+        <div class="pipe-node" data-step="return">5. Home</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Detection, Controls, and Telemetry -->
+    <div style="display:flex;flex-direction:column;gap:20px;">
+
+      <!-- Camera Feed Card -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Camera Feed &amp; YOLO Detection</div>
+          <span style="font-size:0.75rem;color:var(--text-muted)" id="modelLbl">YOLOv11n</span>
+        </div>
+
+        <div class="camera-box">
+          <img id="camImg" class="camera-img" alt="camera stream">
+          <span class="waste-display" id="camEmoji">🍌</span>
+          <div class="bbox" id="bbox" style="display:none">
+            <div class="bbox-tag" id="bboxLabel">banana 91%</div>
+          </div>
+        </div>
+
+        <div class="camera-meta">
+          <span>Object: <b id="detectItemLbl">--</b></span>
+          <span>Category: <b id="detectCatLbl">--</b></span>
+          <span>Inference: <b id="inferTime">-- ms</b></span>
+        </div>
+      </div>
+
+      <!-- Controls & Actions -->
+      <div class="panel">
+        <div class="button-row">
+          <button class="btn btn-primary" onclick="dropRandom()" id="dropBtn">
+            Sort Sample Item
+          </button>
+          
+          <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)">
+          <button class="btn btn-secondary" onclick="document.getElementById('photoInput').click()" id="uploadBtn">
+            Upload Custom Photo
+          </button>
+        </div>
+
+        <div class="select-wrapper">
+          <select id="wasteSelect">
+            <option value="random">Random Item (All Categories)</option>
+            <option value="0">Banana Peel (Biodegradable)</option>
+            <option value="1">Apple Core (Biodegradable)</option>
+            <option value="2">Veggie Scraps (Biodegradable)</option>
+            <option value="3">Plastic Bottle (Plastic)</option>
+            <option value="4">Plastic Bag (Plastic)</option>
+            <option value="5">Food Wrapper (Plastic)</option>
+            <option value="6">Tin Can (Metal)</option>
+            <option value="7">Metal Hardware (Metal)</option>
+            <option value="8">Soda Can (Metal)</option>
+            <option value="9">Battery (Hazardous)</option>
+            <option value="10">Medicine Vial (Hazardous)</option>
+            <option value="11">Chemical Container (Hazardous)</option>
+          </select>
+          <button class="btn btn-secondary" onclick="resetAll()" style="padding:9px 12px;font-size:0.78rem">Reset</button>
+        </div>
+
+        <div class="small-options">
+          <label class="toggle-switch">
+            <input type="checkbox" id="autoToggle">
+            <span>Continuous Auto-Sort</span>
+          </label>
+          <span style="font-size:0.75rem;color:var(--text-muted)">Servo Speed: Fast (3x)</span>
+        </div>
+      </div>
+
+      <!-- Ultrasonic Fill Gauges -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Ultrasonic Fill Sensors (HC-SR04)</div>
+          <span style="font-size:0.75rem;color:var(--text-muted)">Alert Threshold: 80%</span>
+        </div>
+
+        <div class="sensors-list">
+          <div class="sensor-row">
+            <span class="sensor-label" style="color:var(--green)">Biodegradable</span>
+            <div class="sensor-track">
+              <div class="sensor-bar" id="fill0" style="width:0%;background:var(--green)"><span>0%</span></div>
+            </div>
+            <span class="sensor-alert" id="alert0"></span>
+          </div>
+
+          <div class="sensor-row">
+            <span class="sensor-label" style="color:var(--yellow)">Plastic</span>
+            <div class="sensor-track">
+              <div class="sensor-bar" id="fill1" style="width:0%;background:var(--yellow)"><span>0%</span></div>
+            </div>
+            <span class="sensor-alert" id="alert1"></span>
+          </div>
+
+          <div class="sensor-row">
+            <span class="sensor-label" style="color:var(--blue)">Metal</span>
+            <div class="sensor-track">
+              <div class="sensor-bar" id="fill2" style="width:0%;background:var(--blue)"><span>0%</span></div>
+            </div>
+            <span class="sensor-alert" id="alert2"></span>
+          </div>
+
+          <div class="sensor-row">
+            <span class="sensor-label" style="color:var(--red)">Hazardous</span>
+            <div class="sensor-track">
+              <div class="sensor-bar" id="fill3" style="width:0%;background:var(--red)"><span>0%</span></div>
+            </div>
+            <span class="sensor-alert" id="alert3"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Bar & Event Log -->
+      <div class="panel" style="padding:16px;">
+        <div class="stats-bar">
+          <div class="stat-pill">
+            <div class="num" id="totalSorted">0</div>
+            <div class="label">Total Sorted</div>
+          </div>
+          <div class="stat-pill">
+            <div class="num" id="avgCycle">--</div>
+            <div class="label">Cycle Time</div>
+          </div>
+          <div class="stat-pill">
+            <div class="num" id="accuracy">91.0%</div>
+            <div class="label">Accuracy</div>
+          </div>
+        </div>
+
+        <div class="compact-log" id="logBox"></div>
+      </div>
+
     </div>
   </div>
 
-  <!-- camera / detection area -->
-  <div class="card" id="detectCard">
-    <h2>
-      <span class="title-left"><span class="dot" style="background:var(--green)"></span>Camera feed</span>
-      <span class="status-tag" id="backendBadge" onclick="checkBackendStatus()" style="cursor:pointer" title="Click to refresh backend status">Checking backend...</span>
-    </h2>
-    <div class="cam-feed" id="camFeed">
-      <div class="scanline"></div>
-      <img id="camImg" class="cam-img" alt="camera upload">
-      <span class="waste-emoji" id="camEmoji" style="opacity:0">🍌</span>
-      <div class="bbox" id="bbox" style="display:none">
-        <div class="bbox-label" id="bboxLabel">banana_peel 87%</div>
-      </div>
-    </div>
-    <div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap;font-size:.75rem;color:var(--muted)">
-      <span>Model: <b id="modelNameLbl" style="color:var(--text)">YOLOv11n (yolo11n.pt)</b></span>
-      <span>Input: <b style="color:var(--text)">320x320 px</b></span>
-      <span>Threshold: <b style="color:var(--text)">25%</b></span>
-      <span>Inference: <b id="inferTime" style="color:var(--text)">-- ms</b></span>
-    </div>
-  </div>
-
-  <!-- right column: controls, fill bars, stats -->
-  <div style="display:flex;flex-direction:column;gap:14px;grid-row:1/3">
-
-    <div class="card" id="ctrlCard">
-      <h2><span class="title-left"><span class="dot" style="background:var(--yellow)"></span>Controls</span></h2>
-      <button class="btn btn-primary" onclick="dropRandom()" id="dropBtn">Drop random waste</button>
-      
-      <!-- Real photo upload input for YOLO11n inference -->
-      <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)">
-      <button class="btn" style="background:linear-gradient(135deg,#4f46e5,#6366f1)" onclick="document.getElementById('photoInput').click()" id="uploadBtn">
-        Upload photo for YOLOv11n
-      </button>
-
-      <label>Pick a waste type
-        <select id="wasteSelect">
-          <option value="random">Random</option>
-          <option value="0">Banana peel (Bio)</option>
-          <option value="1">Apple core (Bio)</option>
-          <option value="2">Veggie scraps (Bio)</option>
-          <option value="3">Plastic bottle (Plastic)</option>
-          <option value="4">Plastic bag (Plastic)</option>
-          <option value="5">Food wrapper (Plastic)</option>
-          <option value="6">Tin can (Metal)</option>
-          <option value="7">Metal scrap (Metal)</option>
-          <option value="8">Soda can (Metal)</option>
-          <option value="9">Battery (Hazardous)</option>
-          <option value="10">Medicine bottle (Hazardous)</option>
-          <option value="11">Chemical container (Hazardous)</option>
-        </select>
-      </label>
-      <label>Sorting speed
-        <input type="range" id="speedSlider" min="1" max="5" value="3">
-      </label>
-      <div class="toggle-row">
-        <span style="font-size:.82rem">Auto mode</span>
-        <label class="switch"><input type="checkbox" id="autoToggle"><span class="slider"></span></label>
-      </div>
-      <button class="btn btn-danger" onclick="resetAll()">Reset all bins</button>
-    </div>
-
-    <!-- fill level bars (HC-SR04 readings) -->
-    <div class="card">
-      <h2><span class="title-left"><span class="dot" style="background:var(--blue)"></span>Fill levels (HC-SR04)</span></h2>
-      <div class="fill-bars">
-        <div class="fill-row"><span class="lbl" style="color:var(--green)">Bio</span><div class="fill-track"><div class="fill-bar" id="fill0" style="width:0%;background:var(--green)"><span>0%</span></div></div><span id="alert0"></span></div>
-        <div class="fill-row"><span class="lbl" style="color:var(--yellow)">Plastic</span><div class="fill-track"><div class="fill-bar" id="fill1" style="width:0%;background:var(--yellow)"><span>0%</span></div></div><span id="alert1"></span></div>
-        <div class="fill-row"><span class="lbl" style="color:var(--blue)">Metal</span><div class="fill-track"><div class="fill-bar" id="fill2" style="width:0%;background:var(--blue)"><span>0%</span></div></div><span id="alert2"></span></div>
-        <div class="fill-row"><span class="lbl" style="color:var(--red)">Hazardous</span><div class="fill-track"><div class="fill-bar" id="fill3" style="width:0%;background:var(--red)"><span>0%</span></div></div><span id="alert3"></span></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2><span class="title-left"><span class="dot" style="background:var(--green)"></span>Stats</span></h2>
-      <div class="stat-grid">
-        <div class="stat-box"><div class="val" id="totalSorted">0</div><div class="lbl">Items sorted</div></div>
-        <div class="stat-box"><div class="val" id="avgCycle">--</div><div class="lbl">Avg cycle (s)</div></div>
-        <div class="stat-box"><div class="val" id="accuracy">--</div><div class="lbl">Accuracy</div></div>
-        <div class="stat-box"><div class="val" id="powerW">0 W</div><div class="lbl">Power</div></div>
-      </div>
-      <canvas id="pieCanvas" width="180" height="180"></canvas>
-      <div style="display:flex;justify-content:center;gap:14px;font-size:.65rem;flex-wrap:wrap;margin-top:4px">
-        <span style="color:var(--green)">&#9679; Bio</span>
-        <span style="color:var(--yellow)">&#9679; Plastic</span>
-        <span style="color:var(--blue)">&#9679; Metal</span>
-        <span style="color:var(--red)">&#9679; Hazardous</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- log at the bottom -->
-  <div class="card" style="grid-column:2/3;max-height:260px;overflow-y:auto">
-    <h2><span class="title-left"><span class="dot" style="background:var(--muted)"></span>Log</span></h2>
-    <div id="logBox" style="font-size:.72rem;color:var(--muted);line-height:1.7"></div>
-  </div>
 </div>
 
 <script>
-// categories the bin sorts into
+// Category configuration (4 quadrants)
 var CATEGORIES = [
   { name:'Biodegradable', color:'#22c55e', angle:Math.PI*0.25 },
   { name:'Plastic',       color:'#eab308', angle:Math.PI*0.75 },
@@ -222,7 +574,6 @@ var CATEGORIES = [
   { name:'Hazardous',     color:'#ef4444', angle:Math.PI*1.75 }
 ];
 
-// waste items the sim can generate
 var ITEMS = [
   {emoji:'\u{1F34C}',label:'banana_peel',    cat:0},
   {emoji:'\u{1F34E}',label:'apple_core',     cat:0},
@@ -238,22 +589,20 @@ var ITEMS = [
   {emoji:'\u{1F9F4}',label:'chemical_cont',  cat:3}
 ];
 
-// state
 var fills = [0,0,0,0];
 var counts = [0,0,0,0];
 var cycleTimes = [];
 var sorting = false;
 var autoInterval = null;
 var lidAngle = 0;
-var tiltAmount = 0;  // 0 to 1
+var tiltAmount = 0;
 var currentItem = null;
 var pipelineStep = 'idle';
 
-// Backend state
 var BACKEND_URL = 'http://127.0.0.1:8000';
 var isBackendOnline = false;
 
-// canvas stuff
+// Canvas setup
 var cvs = document.getElementById('binCanvas');
 var ctx = cvs.getContext('2d');
 var W = cvs.width, H = cvs.height, CX = W/2, CY = H/2, R = 220;
@@ -261,236 +610,239 @@ var W = cvs.width, H = cvs.height, CX = W/2, CY = H/2, R = 220;
 function drawBin(){
   ctx.clearRect(0,0,W,H);
 
-  // outer ring
+  // Outer ring shadow
   ctx.save();
-  ctx.shadowColor='rgba(99,102,241,.25)';ctx.shadowBlur=30;
-  ctx.beginPath();ctx.arc(CX,CY,R+12,0,Math.PI*2);ctx.fillStyle='#1e293b';ctx.fill();
+  ctx.shadowColor = 'rgba(99,102,241,0.2)';
+  ctx.shadowBlur = 24;
+  ctx.beginPath();
+  ctx.arc(CX,CY,R+10,0,Math.PI*2);
+  ctx.fillStyle = '#111827';
+  ctx.fill();
   ctx.restore();
 
-  // draw the 4 quadrants
+  // 4 Quadrants
   for(var i=0;i<4;i++){
     var startA = Math.PI*0.5*i - Math.PI/4;
-    ctx.beginPath();ctx.moveTo(CX,CY);ctx.arc(CX,CY,R,startA,startA+Math.PI/2);ctx.closePath();
-    ctx.fillStyle=CATEGORIES[i].color+'33';ctx.fill();
-    ctx.strokeStyle=CATEGORIES[i].color+'88';ctx.lineWidth=2;ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(CX,CY);
+    ctx.arc(CX,CY,R,startA,startA+Math.PI/2);
+    ctx.closePath();
+    ctx.fillStyle = CATEGORIES[i].color + '26';
+    ctx.fill();
+    ctx.strokeStyle = CATEGORIES[i].color + '88';
+    ctx.lineWidth = 2;
+    ctx.stroke();
 
-    var mid = startA+Math.PI/4;
-    var lx=CX+Math.cos(mid)*(R*0.6), ly=CY+Math.sin(mid)*(R*0.6);
-    ctx.fillStyle=CATEGORIES[i].color;ctx.font='bold 13px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText(CATEGORIES[i].name,lx,ly);
-    ctx.font='11px sans-serif';ctx.fillStyle='#fff';
-    ctx.fillText(Math.round(fills[i])+'%',lx,ly+18);
+    var mid = startA + Math.PI/4;
+    var lx = CX + Math.cos(mid)*(R*0.62);
+    var ly = CY + Math.sin(mid)*(R*0.62);
+    ctx.fillStyle = CATEGORIES[i].color;
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(CATEGORIES[i].name, lx, ly - 8);
+
+    ctx.font = '11px sans-serif';
+    ctx.fillStyle = '#f1f5f9';
+    ctx.fillText(Math.round(fills[i]) + '%', lx, ly + 12);
   }
 
-  // center hub
-  ctx.beginPath();ctx.arc(CX,CY,50,0,Math.PI*2);
-  ctx.fillStyle='#1e293b';ctx.fill();ctx.strokeStyle='#334155';ctx.lineWidth=2;ctx.stroke();
+  // Central hub
+  ctx.beginPath();
+  ctx.arc(CX,CY,48,0,Math.PI*2);
+  ctx.fillStyle = '#0f172a';
+  ctx.fill();
+  ctx.strokeStyle = '#334155';
+  ctx.lineWidth = 2;
+  ctx.stroke();
 
-  // rotating lid
+  // Rotating lid / chute
   ctx.save();
   ctx.translate(CX,CY);
   ctx.rotate(lidAngle);
-  var lidLen = R*0.85;
-  var tiltScale = 1 - tiltAmount*0.35;
+  var lidLen = R * 0.85;
+  var tiltScale = 1 - tiltAmount * 0.35;
   ctx.save();
-  ctx.scale(1,tiltScale);
+  ctx.scale(1, tiltScale);
   ctx.beginPath();
-  ctx.moveTo(-24,0);ctx.lineTo(-12,-lidLen);ctx.lineTo(12,-lidLen);ctx.lineTo(24,0);ctx.closePath();
-  ctx.fillStyle='rgba(99,102,241,.5)';ctx.fill();
-  ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+  ctx.moveTo(-22,0);
+  ctx.lineTo(-12,-lidLen);
+  ctx.lineTo(12,-lidLen);
+  ctx.lineTo(22,0);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(99,102,241,0.55)';
+  ctx.fill();
+  ctx.strokeStyle = '#818cf8';
+  ctx.lineWidth = 2;
+  ctx.stroke();
 
-  // show item sitting on the lid before it gets tipped
-  if(currentItem && (pipelineStep==='detect'||pipelineStep==='turn')){
-    ctx.font='32px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText(currentItem.emoji || '\u{1F5D1}',0,-lidLen*0.55);
+  if(currentItem && (pipelineStep==='detect' || pipelineStep==='turn')){
+    ctx.font = '32px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(currentItem.emoji || '\u{1F5D1}', 0, -lidLen*0.55);
   }
   ctx.restore();
 
-  // pivot dot
-  ctx.beginPath();ctx.arc(0,0,10,0,Math.PI*2);ctx.fillStyle='#818cf8';ctx.fill();
+  // Pivot axle
+  ctx.beginPath();
+  ctx.arc(0,0,9,0,Math.PI*2);
+  ctx.fillStyle = '#818cf8';
+  ctx.fill();
   ctx.restore();
 
-  // falling item during tilt
+  // Dropping animation
   if(currentItem && pipelineStep==='tilt'){
     var tgtAngle = CATEGORIES[currentItem.cat].angle;
-    var tx = CX + Math.cos(tgtAngle-Math.PI/2)*(R*0.55);
-    var ty = CY + Math.sin(tgtAngle-Math.PI/2)*(R*0.55);
-    ctx.font=(32 - tiltAmount*12)+'px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.globalAlpha = 1 - tiltAmount*0.6;
-    ctx.fillText(currentItem.emoji || '\u{1F5D1}',tx,ty);
-    ctx.globalAlpha=1;
+    var tx = CX + Math.cos(tgtAngle - Math.PI/2) * (R * 0.55);
+    var ty = CY + Math.sin(tgtAngle - Math.PI/2) * (R * 0.55);
+    ctx.font = (32 - tiltAmount * 12) + 'px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.globalAlpha = Math.max(0, 1 - tiltAmount * 0.7);
+    ctx.fillText(currentItem.emoji || '\u{1F5D1}', tx, ty);
+    ctx.globalAlpha = 1;
   }
 
-  // HC-SR04 sensor positions (4 small circles on the rim)
+  // Ultrasonic sensor pins on rim
   for(var i=0;i<4;i++){
     var a = Math.PI*0.5*i;
-    var sx=CX+Math.cos(a)*(R+6),sy=CY+Math.sin(a)*(R+6);
-    ctx.beginPath();ctx.arc(sx,sy,5,0,Math.PI*2);ctx.fillStyle='#6366f1';ctx.fill();
+    var sx = CX + Math.cos(a)*(R+4);
+    var sy = CY + Math.sin(a)*(R+4);
+    ctx.beginPath();
+    ctx.arc(sx, sy, 4, 0, Math.PI*2);
+    ctx.fillStyle = '#6366f1';
+    ctx.fill();
   }
 
   requestAnimationFrame(drawBin);
 }
 drawBin();
 
-// pipeline step highlighting
 function setPipeline(step){
-  pipelineStep=step;
-  document.querySelectorAll('.pipe-step').forEach(function(el){
-    el.classList.toggle('active',el.dataset.step===step);
+  pipelineStep = step;
+  document.querySelectorAll('.pipe-node').forEach(function(el){
+    el.classList.toggle('active', el.dataset.step === step);
   });
-  document.getElementById('stateLabel').textContent=step.toUpperCase();
+  document.getElementById('stateLabel').textContent = step.toUpperCase();
 }
 
-// show detection bbox on the "camera"
 function showDetection(item, conf, normBox, inferMs){
-  var emoji=document.getElementById('camEmoji');
-  var bbox=document.getElementById('bbox');
-  var lbl=document.getElementById('bboxLabel');
+  var emoji = document.getElementById('camEmoji');
+  var bbox = document.getElementById('bbox');
+  var lbl = document.getElementById('bboxLabel');
 
   if(item.isPhoto){
-    emoji.style.opacity='0';
+    emoji.style.opacity = '0';
   } else {
-    document.getElementById('camImg').style.display='none';
-    emoji.textContent=item.emoji;
-    emoji.style.opacity='1';
-    emoji.style.transform='scale(1.1)';
+    document.getElementById('camImg').style.display = 'none';
+    emoji.textContent = item.emoji;
+    emoji.style.opacity = '1';
   }
 
-  bbox.style.display='block';
-  bbox.style.borderColor=CATEGORIES[item.cat].color;
+  bbox.style.display = 'block';
+  bbox.style.borderColor = CATEGORIES[item.cat].color;
 
-  if(normBox && normBox.length===4){
-    var left = Math.max(0, Math.min(90, normBox[0] * 100));
-    var top = Math.max(0, Math.min(90, normBox[1] * 100));
-    var width = Math.max(10, Math.min(100 - left, (normBox[2] - normBox[0]) * 100));
-    var height = Math.max(10, Math.min(100 - top, (normBox[3] - normBox[1]) * 100));
+  if(normBox && normBox.length === 4){
+    var left = Math.max(0, Math.min(85, normBox[0] * 100));
+    var top = Math.max(0, Math.min(85, normBox[1] * 100));
+    var width = Math.max(15, Math.min(100 - left, (normBox[2] - normBox[0]) * 100));
+    var height = Math.max(15, Math.min(100 - top, (normBox[3] - normBox[1]) * 100));
     bbox.style.left = left + '%';
     bbox.style.top = top + '%';
     bbox.style.width = width + '%';
     bbox.style.height = height + '%';
   } else {
-    bbox.style.width='90px';bbox.style.height='90px';
-    bbox.style.left='calc(50% - 45px)';bbox.style.top='calc(50% - 45px)';
+    bbox.style.width = '90px';
+    bbox.style.height = '90px';
+    bbox.style.left = 'calc(50% - 45px)';
+    bbox.style.top = 'calc(50% - 45px)';
   }
 
-  lbl.style.background=CATEGORIES[item.cat].color;
-  lbl.textContent=item.label+' '+conf+'%';
-  document.getElementById('inferTime').textContent=(inferMs || Math.floor(80+Math.random()*120))+' ms';
+  lbl.style.background = CATEGORIES[item.cat].color;
+  lbl.textContent = item.label + ' ' + conf + '%';
+
+  document.getElementById('detectItemLbl').textContent = item.label;
+  document.getElementById('detectCatLbl').textContent = CATEGORIES[item.cat].name;
+  document.getElementById('detectCatLbl').style.color = CATEGORIES[item.cat].color;
+  document.getElementById('inferTime').textContent = (inferMs || Math.floor(10 + Math.random()*8)) + ' ms';
 }
 
 function hideDetection(){
-  document.getElementById('camEmoji').style.opacity='0';
-  document.getElementById('bbox').style.display='none';
-  document.getElementById('camImg').style.display='none';
+  document.getElementById('camEmoji').style.opacity = '0';
+  document.getElementById('bbox').style.display = 'none';
+  document.getElementById('camImg').style.display = 'none';
+  document.getElementById('detectItemLbl').textContent = '--';
+  document.getElementById('detectCatLbl').textContent = '--';
+  document.getElementById('detectCatLbl').style.color = 'var(--text)';
 }
 
-// update the fill level bars
 function updateFills(){
   for(var i=0;i<4;i++){
-    var bar=document.getElementById('fill'+i);
-    var pct=Math.min(100,Math.round(fills[i]));
-    bar.style.width=pct+'%';
-    bar.querySelector('span').textContent=pct+'%';
-    var alertEl=document.getElementById('alert'+i);
-    if(pct>=80){
-      alertEl.innerHTML = '<span class="alert-badge">FULL</span>';
-    } else {
-      alertEl.innerHTML = '';
-    }
+    var bar = document.getElementById('fill' + i);
+    var pct = Math.min(100, Math.round(fills[i]));
+    bar.style.width = pct + '%';
+    bar.querySelector('span').textContent = pct + '%';
+    var alertEl = document.getElementById('alert' + i);
+    alertEl.textContent = pct >= 80 ? 'FULL' : '';
   }
-}
-
-// donut chart
-function drawPie(){
-  var pc=document.getElementById('pieCanvas');
-  var px=pc.getContext('2d');
-  px.clearRect(0,0,180,180);
-  var total=counts.reduce(function(a,b){return a+b;},0);
-  if(total===0){
-    px.fillStyle='#1e293b';px.beginPath();px.arc(90,90,75,0,Math.PI*2);px.fill();
-    px.fillStyle='#64748b';px.font='12px sans-serif';px.textAlign='center';px.fillText('No data',90,94);
-    return;
-  }
-  var start=-Math.PI/2;
-  for(var i=0;i<4;i++){
-    var slice=counts[i]/total*Math.PI*2;
-    px.beginPath();px.moveTo(90,90);px.arc(90,90,75,start,start+slice);px.closePath();
-    px.fillStyle=CATEGORIES[i].color;px.fill();
-    start+=slice;
-  }
-  px.beginPath();px.arc(90,90,40,0,Math.PI*2);px.fillStyle=getComputedStyle(document.body).backgroundColor||'#0a0e17';px.fill();
-  px.fillStyle='#e2e8f0';px.font='bold 18px sans-serif';px.textAlign='center';px.textBaseline='middle';
-  px.fillText(total,90,86);
-  px.font='9px sans-serif';px.fillStyle='#64748b';px.fillText('items',90,102);
 }
 
 function updateStats(){
-  var total=counts.reduce(function(a,b){return a+b;},0);
-  document.getElementById('totalSorted').textContent=total;
+  var total = counts.reduce(function(a,b){return a+b;},0);
+  document.getElementById('totalSorted').textContent = total;
   if(cycleTimes.length){
-    var sum=0;
-    for(var j=0;j<cycleTimes.length;j++) sum+=cycleTimes[j];
-    var avg=(sum/cycleTimes.length).toFixed(1);
-    document.getElementById('avgCycle').textContent=avg+'s';
+    var sum = 0;
+    for(var j=0;j<cycleTimes.length;j++) sum += cycleTimes[j];
+    var avg = (sum / cycleTimes.length).toFixed(1);
+    document.getElementById('avgCycle').textContent = avg + 's';
   }
-  if(total>0){
-    var acc = (85 + Math.random()*8).toFixed(1);
-    document.getElementById('accuracy').textContent=acc+'%';
-  } else {
-    document.getElementById('accuracy').textContent='--';
-  }
-  document.getElementById('powerW').textContent=sorting?Math.floor(15+Math.random()*6)+' W':'0 W';
-  drawPie();
 }
 
 function log(msg){
-  var box=document.getElementById('logBox');
-  var t=new Date().toLocaleTimeString();
-  box.innerHTML='<div><span style="color:var(--accent)">['+t+']</span> '+msg+'</div>'+box.innerHTML;
-  while(box.children.length>50) box.removeChild(box.lastChild);
+  var box = document.getElementById('logBox');
+  var t = new Date().toLocaleTimeString();
+  box.innerHTML = '<div><span style="color:var(--accent)">['+t+']</span> '+msg+'</div>' + box.innerHTML;
+  while(box.children.length > 30) box.removeChild(box.lastChild);
 }
 
 function tweenVal(from,to,duration,setter){
   return new Promise(function(resolve){
-    var t0=performance.now();
+    var t0 = performance.now();
     function frame(now){
-      var p=Math.min(1,(now-t0)/duration);
-      var eased = p<0.5 ? 2*p*p : 1-Math.pow(-2*p+2,2)/2;
-      setter(from+(to-from)*eased);
-      if(p<1) requestAnimationFrame(frame); else resolve();
+      var p = Math.min(1, (now - t0)/duration);
+      var eased = p < 0.5 ? 2*p*p : 1 - Math.pow(-2*p+2,2)/2;
+      setter(from + (to - from)*eased);
+      if(p < 1) requestAnimationFrame(frame); else resolve();
     }
     requestAnimationFrame(frame);
   });
 }
 
-function getSpeed(){return 6-parseInt(document.getElementById('speedSlider').value);}
-
-// Backend connectivity check
 async function checkBackendStatus(){
   var badge = document.getElementById('backendBadge');
-  badge.textContent = 'Checking...';
-  badge.className = 'status-tag';
+  var txt = document.getElementById('backendText');
+  txt.textContent = 'Connecting...';
+  badge.classList.remove('online');
   try {
     var res = await fetch(BACKEND_URL + '/', { mode: 'cors' });
     if(res.ok){
       var data = await res.json();
       isBackendOnline = true;
-      badge.textContent = 'Backend: YOLOv11n (Live)';
-      badge.className = 'status-tag online';
-      document.getElementById('modelNameLbl').textContent = 'YOLOv11n (' + data.model + ')';
+      badge.classList.add('online');
+      txt.textContent = 'YOLOv11n Backend Online';
+      document.getElementById('modelLbl').textContent = 'Live ' + data.model;
       log('connected to YOLOv11n backend on ' + BACKEND_URL);
       return true;
     }
-  } catch(e) {
-    // backend offline
-  }
+  } catch(e) {}
   isBackendOnline = false;
-  badge.textContent = 'Backend: Sim Mode';
-  badge.className = 'status-tag';
+  badge.classList.remove('online');
+  txt.textContent = 'Simulation Mode';
+  document.getElementById('modelLbl').textContent = 'YOLOv11n (Sim)';
   return false;
 }
 
-// User photo upload handler
 async function handlePhotoUpload(event){
   var file = event.target.files && event.target.files[0];
   if(!file) return;
@@ -503,7 +855,7 @@ async function handlePhotoUpload(event){
     camImg.style.display = 'block';
     document.getElementById('camEmoji').style.opacity = '0';
 
-    log('photo loaded (' + file.name + '), sending to YOLOv11n...');
+    log('processing photo: ' + file.name);
 
     if(isBackendOnline){
       try {
@@ -529,16 +881,15 @@ async function handlePhotoUpload(event){
             sortItem(item, det.confidence, inferMs);
             return;
           } else {
-            log('YOLOv11n found no objects with conf >= 25%');
+            log('no object detected with confidence >= 25%');
             return;
           }
         }
       } catch(err) {
-        log('backend inference error, falling back to sim: ' + err.message);
+        log('backend error: ' + err.message);
       }
     }
 
-    // Fallback if backend offline
     var item = {
       label: file.name.split('.')[0] || 'custom_waste',
       cat: Math.floor(Math.random()*4),
@@ -546,114 +897,115 @@ async function handlePhotoUpload(event){
       isPhoto: true,
       normBox: [0.2, 0.2, 0.8, 0.8]
     };
-    sortItem(item, Math.floor(70 + Math.random()*25));
+    sortItem(item, Math.floor(75 + Math.random()*20));
   };
   reader.readAsDataURL(file);
 }
 
-// main sorting cycle
 async function sortItem(item, customConf, customInferMs){
   if(sorting) return;
-  if(fills[item.cat]>=100){
-    log(CATEGORIES[item.cat].name+' bin is full, can\'t sort');
+  if(fills[item.cat] >= 100){
+    log(CATEGORIES[item.cat].name + ' bin is full');
     return;
   }
-  sorting=true;
-  currentItem=item;
-  var speed=getSpeed();
-  var conf=customConf || Math.floor(30+Math.random()*65);
-  var cycleStart=performance.now();
-  document.getElementById('dropBtn').disabled=true;
-  document.getElementById('uploadBtn').disabled=true;
-  document.getElementById('powerW').textContent=Math.floor(15+Math.random()*6)+' W';
+  sorting = true;
+  currentItem = item;
+  var conf = customConf || Math.floor(78 + Math.random()*18);
+  var cycleStart = performance.now();
+  document.getElementById('dropBtn').disabled = true;
+  document.getElementById('uploadBtn').disabled = true;
 
-  // step 1: detect
+  // 1. Detect
   setPipeline('detect');
   showDetection(item, conf, item.normBox, customInferMs);
-  log('detected <b style="color:'+CATEGORIES[item.cat].color+'">'+item.label+'</b> ('+conf+'%) -> '+CATEGORIES[item.cat].name);
-  await new Promise(function(r){setTimeout(r,600*speed);});
+  log('detected ' + item.label + ' (' + conf + '%) &rarr; ' + CATEGORIES[item.cat].name);
+  await new Promise(function(r){setTimeout(r, 600);});
 
-  // step 2: rotate base servo to the right bin
+  // 2. Turn base servo
   setPipeline('turn');
   var targetAngle = CATEGORIES[item.cat].angle - Math.PI/2;
-  await tweenVal(lidAngle,targetAngle,800*speed,function(v){
-    lidAngle=v;
-    document.getElementById('servoBase').textContent=Math.round(v*180/Math.PI)+'\u00B0';
+  await tweenVal(lidAngle, targetAngle, 800, function(v){
+    lidAngle = v;
+    document.getElementById('servoBase').textContent = Math.round(v * 180 / Math.PI) + '\u00B0';
   });
-  lidAngle=targetAngle;
-  log('base servo -> bin #'+(item.cat+1)+' ('+Math.round(targetAngle*180/Math.PI)+'\u00B0)');
+  lidAngle = targetAngle;
 
-  // step 3: tilt to drop the item in
+  // 3. Tilt servo
   setPipeline('tilt');
   hideDetection();
-  await tweenVal(0,1,600*speed,function(v){
-    tiltAmount=v;
-    document.getElementById('servoTilt').textContent=Math.round(v*70)+'\u00B0';
+  await tweenVal(0, 1, 600, function(v){
+    tiltAmount = v;
+    document.getElementById('servoTilt').textContent = Math.round(v * 70) + '\u00B0';
   });
-  fills[item.cat]+=Math.floor(3+Math.random()*6);
+  fills[item.cat] += Math.floor(4 + Math.random()*6);
   counts[item.cat]++;
   updateFills();
   updateStats();
-  log('tilt 70\u00B0, item goes into <b style="color:'+CATEGORIES[item.cat].color+'">'+CATEGORIES[item.cat].name+'</b>');
 
-  // step 4: return to home position
+  // 4. Return home
   setPipeline('return');
-  await tweenVal(1,0,400*speed,function(v){
-    tiltAmount=v;
-    document.getElementById('servoTilt').textContent=Math.round(v*70)+'\u00B0';
+  await tweenVal(1, 0, 400, function(v){
+    tiltAmount = v;
+    document.getElementById('servoTilt').textContent = Math.round(v * 70) + '\u00B0';
   });
-  await tweenVal(lidAngle,0,600*speed,function(v){
-    lidAngle=v;
-    document.getElementById('servoBase').textContent=Math.round(v*180/Math.PI)+'\u00B0';
+  await tweenVal(lidAngle, 0, 600, function(v){
+    lidAngle = v;
+    document.getElementById('servoBase').textContent = Math.round(v * 180 / Math.PI) + '\u00B0';
   });
-  lidAngle=0;tiltAmount=0;currentItem=null;
+  lidAngle = 0;
+  tiltAmount = 0;
+  currentItem = null;
 
-  var cycleTime=((performance.now()-cycleStart)/1000).toFixed(1);
+  var cycleTime = ((performance.now() - cycleStart) / 1000).toFixed(1);
   cycleTimes.push(parseFloat(cycleTime));
-  log('done, cycle took '+cycleTime+'s');
+  log('cycle complete in ' + cycleTime + 's');
 
   setPipeline('idle');
-  sorting=false;
-  document.getElementById('dropBtn').disabled=false;
-  document.getElementById('uploadBtn').disabled=false;
-  document.getElementById('powerW').textContent='0 W';
+  sorting = false;
+  document.getElementById('dropBtn').disabled = false;
+  document.getElementById('uploadBtn').disabled = false;
   updateStats();
 }
 
 function dropRandom(){
-  var sel=document.getElementById('wasteSelect').value;
+  var sel = document.getElementById('wasteSelect').value;
   var item;
-  if(sel==='random'){
-    item=ITEMS[Math.floor(Math.random()*ITEMS.length)];
+  if(sel === 'random'){
+    item = ITEMS[Math.floor(Math.random() * ITEMS.length)];
   } else {
-    item=ITEMS[parseInt(sel)];
+    item = ITEMS[parseInt(sel)];
   }
   sortItem(item);
 }
 
-// auto mode toggle
-document.getElementById('autoToggle').addEventListener('change',function(e){
+document.getElementById('autoToggle').addEventListener('change', function(e){
   if(e.target.checked){
-    autoInterval=setInterval(function(){if(!sorting)dropRandom();},2500);
-    log('auto mode on');
+    autoInterval = setInterval(function(){
+      if(!sorting) dropRandom();
+    }, 2800);
+    log('auto-sort active');
   } else {
     clearInterval(autoInterval);
-    autoInterval=null;
-    log('auto mode off');
+    autoInterval = null;
+    log('auto-sort stopped');
   }
 });
 
 function resetAll(){
-  fills=[0,0,0,0];counts=[0,0,0,0];cycleTimes=[];
-  updateFills();updateStats();
-  log('bins cleared');
+  fills = [0,0,0,0];
+  counts = [0,0,0,0];
+  cycleTimes = [];
+  updateFills();
+  updateStats();
+  log('all compartments reset');
 }
 
-// init
-updateFills();updateStats();setPipeline('idle');
+// Startup
+updateFills();
+updateStats();
+setPipeline('idle');
 checkBackendStatus();
-log('system ready, Pi 4 + YOLOv11n');
-log('click "Drop random waste" or "Upload photo" to test');
+log('system ready');
 </script>
 </body>
 </html>
