@@ -389,9 +389,14 @@ select{
       <h1>AI Waste Management System</h1>
       <p>YOLOv11n Detection + Two-Servo Mechanical Sorter + Ultrasonic Fill Sensing</p>
     </div>
-    <div class="backend-status" id="backendBadge" onclick="checkBackendStatus()" title="Click to refresh connection">
-      <div class="status-indicator"></div>
-      <span id="backendText">Checking Backend...</span>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <a href="report.html" class="btn btn-secondary" style="padding:6px 14px;font-size:0.75rem;text-decoration:none;border-radius:20px;display:inline-flex;align-items:center;gap:6px;">
+        📄 Evaluation Report
+      </a>
+      <div class="backend-status" id="backendBadge" onclick="checkBackendStatus()" title="Click to refresh connection">
+        <div class="status-indicator"></div>
+        <span id="backendText">Checking Backend...</span>
+      </div>
     </div>
   </header>
 
